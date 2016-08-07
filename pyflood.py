@@ -21,7 +21,7 @@ class PyFlood(multiprocessing.Process):
 		self.start_flood(flood_type)
 
 	def start_flood(self, flood_type):
-		s = socket.socket(socket.AF_INET, flood_type.get_socket_type())
+		s = socket.socket(socket.AF_INET, flood_type.get_socket_type(), flood_type.get_socket_protocol())
 		msg_bytes = random._urandom(int(self.packet_size))
 
 		# Try to establish a connection

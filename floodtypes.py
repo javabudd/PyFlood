@@ -24,7 +24,8 @@ class FloodTypes:
 			flood_type.set_type_id(result.__getitem__(0))
 			flood_type.set_name(result.__getitem__(1))
 			flood_type.set_socket_type(result.__getitem__(2))
-			flood_type.set_socket_options(result.__getitem__(3))
+			flood_type.set_socket_protocol(result.__getitem__(3))
+			flood_type.set_socket_options(result.__getitem__(4))
 			flood_types.append(flood_type)
 
 		return flood_types
@@ -42,7 +43,8 @@ class FloodTypes:
 		flood_type.set_type_id(result.__getitem__(0))
 		flood_type.set_name(result.__getitem__(1))
 		flood_type.set_socket_type(result.__getitem__(2))
-		flood_type.set_socket_options(result.__getitem__(3))
+		flood_type.set_socket_protocol(result.__getitem__(3))
+		flood_type.set_socket_options(result.__getitem__(4))
 
 		return flood_type
 
@@ -66,6 +68,7 @@ class FloodType:
 	name = None
 	socket_type = None
 	socket_options = {}
+	socket_protocol = None
 
 	@classmethod
 	def get_type_id(cls):
@@ -107,3 +110,12 @@ class FloodType:
 
 		return cls
 
+	@classmethod
+	def get_socket_protocol(cls):
+		return cls.socket_protocol
+
+	@classmethod
+	def set_socket_protocol(cls, socket_protocol):
+		cls.socket_protocol = socket_protocol
+
+		return cls
