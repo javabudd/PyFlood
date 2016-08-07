@@ -1,4 +1,5 @@
 import sqlite3
+import json
 
 
 class FloodTypes:
@@ -23,6 +24,7 @@ class FloodTypes:
 			flood_type.set_type_id(result.__getitem__(0))
 			flood_type.set_name(result.__getitem__(1))
 			flood_type.set_socket_type(result.__getitem__(2))
+			flood_type.set_socket_options(result.__getitem__(3))
 			flood_types.append(flood_type)
 
 		return flood_types
@@ -40,6 +42,7 @@ class FloodTypes:
 		flood_type.set_type_id(result.__getitem__(0))
 		flood_type.set_name(result.__getitem__(1))
 		flood_type.set_socket_type(result.__getitem__(2))
+		flood_type.set_socket_options(result.__getitem__(3))
 
 		return flood_type
 
@@ -62,6 +65,7 @@ class FloodType:
 	type_id = None
 	name = None
 	socket_type = None
+	socket_options = {}
 
 	@classmethod
 	def get_type_id(cls):
@@ -92,3 +96,14 @@ class FloodType:
 		cls.socket_type = socket_type
 
 		return cls
+
+	@classmethod
+	def get_socket_options(cls):
+		return json.loads(cls.socket_options)
+
+	@classmethod
+	def set_socket_options(cls, socket_options):
+		cls.socket_options = socket_options
+
+		return cls
+
