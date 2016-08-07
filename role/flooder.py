@@ -1,4 +1,6 @@
-import random
+from struct import pack
+from random import _urandom
+from array import array
 
 
 class Flooder:
@@ -13,21 +15,28 @@ class Flooder:
 		self.socket_options = {}
 
 		# Packet
-		self.packet_size = 256
+		self.random_bytes = 120
 
 	def get_random_message(self):
-		return random._urandom(int(self.packet_size))
+		return _urandom(int(self.random_bytes))
 
-	@staticmethod
-	def checksum(msg):
-		s = 0
-		for i in range(0, len(msg), 2):
-			w = msg[i] + (msg[i+1]) << 8
-			s += w
-
-		s = (s >> 16) + (s & 0xffff)
-		s += (s >> 16)
-
-		s = ~s & 0xffff
-
-		return s
+	if pack("H", 1) == "\x00\x01":  # big endian
+		@staticmethod
+		def checksum(pkt):
+			if len(pkt) % 2 == 1:
+				pkt += bytes("\0".encode('utf-8'))
+			s = sum(array("H", pkt))
+			s = (s >> 16) + (s & 0xffff)
+			s += s >> 16
+			s = ~s
+			return s & 0xffff
+	else:
+		@staticmethod
+		def checksum(pkt):
+			if len(pkt) % 2 == 1:
+				pkt += bytes("\0".encode('utf-8'))
+			s = sum(array("H", pkt))
+			s = (s >> 16) + (s & 0xffff)
+			s += s >> 16
+			s = ~s
+			return (((s >> 8) & 0xff) | s << 8) & 0xffff

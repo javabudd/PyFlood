@@ -1,8 +1,8 @@
-import argparse
-import sys
 from context import flood
+from argparse import ArgumentParser
+from sys import exit
 
-parser = argparse.ArgumentParser()
+parser = ArgumentParser()
 parser.add_argument('ip', help='Target IP address', type=str)
 parser.add_argument('port', help='Target Port', type=str)
 parser.add_argument('type', help='Flood type', type=int)
@@ -17,7 +17,7 @@ if __name__ == '__main__':
 		ft = flood.Flood
 		for floodType in ft.get_list():
 			print(str(floodType.get_type_id()), ': ' + floodType.get_name())
-		sys.exit()
+		exit()
 	elif args.ip and args.port and args.type and args.procs:
 		print('Starting flood on %s processes...' % args.procs)
 		for i in range(0, args.procs):
@@ -31,4 +31,4 @@ if __name__ == '__main__':
 		flood.Flood(args.ip, args.port, args.type).run()
 	else:
 		parser.print_help()
-		sys.exit()
+		exit()

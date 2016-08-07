@@ -1,10 +1,10 @@
-import multiprocessing
 from role import raw_flooder
 from role import udp_flooder
 from role import tcp_flooder
+from multiprocessing import Process
 
 
-class Flood(multiprocessing.Process):
+class Flood(Process):
 	UDP = 1
 	TCP = 2
 	RAW = 3
@@ -16,7 +16,7 @@ class Flood(multiprocessing.Process):
 	}
 
 	def __init__(self, ip, port, flood_type):
-		multiprocessing.Process.__init__(self)
+		Process.__init__(self)
 		self.ip = ip
 		self.port = port
 		self.flood_type = flood_type
