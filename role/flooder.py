@@ -21,9 +21,8 @@ class Flooder:
 	@staticmethod
 	def checksum(msg):
 		s = 0
-
 		for i in range(0, len(msg), 2):
-			w = ord(msg[i]) + (ord(msg[i+1]) << 8)
+			w = msg[i] + (msg[i+1]) << 8
 			s += w
 
 		s = (s >> 16) + (s & 0xffff)
