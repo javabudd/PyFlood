@@ -10,11 +10,9 @@ class Flooder:
 		self.port = port
 
 		# Socket
-		self.socket_type = 1
-		self.socket_protocol = 0
 		self.socket_options = {}
 
-		# Packet
+		# Random bytes
 		self.random_bytes = 120
 
 	def get_random_message(self):

