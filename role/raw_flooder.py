@@ -117,7 +117,7 @@ class RAWFlooder(flooder.Flooder):
 		try:
 			while True:
 				try:
-					s.send(packet)
+					s.sendto(packet, (self.ip, self.port))
 					# try:
 					# 	s.settimeout(5)
 					# 	resp = s.recv(1024)
