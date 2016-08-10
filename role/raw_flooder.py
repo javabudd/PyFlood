@@ -118,6 +118,9 @@ class RAWFlooder(flooder.Flooder):
 			while True:
 				try:
 					s.send(packet)
+					s.close()
+					s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)
+					s.connect((self.ip, int(self.port)))
 					# try:
 					# 	s.settimeout(5)
 					# 	resp = s.recv(1024)
