@@ -62,8 +62,8 @@ class RAWFlooder(flooder.Flooder):
 		tcp_fin = 0
 		tcp_syn = 1
 		tcp_rst = 0
-		tcp_psh = 0
-		tcp_ack = 0
+		tcp_psh = 1
+		tcp_ack = 1
 		tcp_urg = 0
 		tcp_window = htons(5840)
 		tcp_check = 0

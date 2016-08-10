@@ -1,5 +1,6 @@
 import socket
 import sys
+from time import sleep
 from role import flooder
 
 
@@ -20,12 +21,6 @@ class TCPFlooder(flooder.Flooder):
 		# Instantiate the socket
 		s = socket.socket(socket.AF_INET, self.socket_type, self.socket_protocol)
 
-		# Set the socket options
-		# if sys.platform == 'linux' or sys.platform == 'linux2':
-		# 	for option in self.socket_options:
-		# 		s.setsockopt(option.get('level'), option.get('option'), option.get('value'))
-		s.settimeout(None)
-
 		# Attempt to establish a connection
 		try:
 			s.connect((self.ip, int(self.port)))
@@ -44,6 +39,7 @@ class TCPFlooder(flooder.Flooder):
 						s = socket.socket(socket.AF_INET, self.socket_type)
 						s.connect((self.ip, int(self.port)))
 					except socket.error:
-						print('Reconnecting...')
+						print('Target down. Waiting %s seconds before reconnecting' % 10)
+						sleep(10)
 		except KeyboardInterrupt:
 			sys.exit()
